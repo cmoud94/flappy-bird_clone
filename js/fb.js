@@ -18,7 +18,10 @@ var game = new Phaser.Game(
  */
 var gravity = 500;
 var jump_velocity = -150;
-var world_speed = -100;
+var world_speed = -60;
+var crate_gen_delay = 2000;
+var bird_scale = 1.5;
+var crate_scale = 0.5;
 
 /**
  * Create game states
@@ -34,8 +37,9 @@ var fb_state_init = {
         game.load.spritesheet('btn_play', 'assets/btn_play.png', 64, 64);
         // Ground
         game.load.image('ground', 'assets/ground.png');
-        // Pipes
+        // Crates
         game.load.image('crate', 'assets/Crate.png');
+        game.load.image('score_tile', 'assets/score_tile.png');
         // Birds
         game.load.spritesheet('bird_black', 'assets/Player_Black.png', 15, 16);
         game.load.spritesheet('bird_blue', 'assets/Player_Blue.png', 15, 16);
@@ -48,6 +52,10 @@ var fb_state_init = {
         game.load.spritesheet('bird_red', 'assets/Player_Red.png', 15, 16);
         game.load.spritesheet('bird_sick', 'assets/Player_Sick.png', 15, 16);
         game.load.spritesheet('bird_white', 'assets/Player_White.png', 15, 16);
+        // Jump sound
+        game.load.audio('jump_snd', 'assets/jump.wav');
+        // Score sound
+        game.load.audio('score_snd', 'assets/score_up.wav');
     },
     create: function() {
         var bg_w = game.cache.getImage('bg').width;
@@ -113,6 +121,9 @@ var fb_state_menu = {
 var fb_state_game = {
     create: function() {
         this.game_running = false;
+        this.score = 0;
+        this.score_update = false;
+        this.crate_size = game.cache.getImage('crate').width;
 
         // Init physics system
         game.physics.startSystem(Phaser.Physics.ARCADE);
@@ -127,6 +138,12 @@ var fb_state_game = {
             'bg'
         );
 
+        // Crates
+        this.crates = game.add.physicsGroup();
+
+        // Score tiles
+        this.score_tiles = game.add.physicsGroup();
+
         // Ground
         this.ground = game.add.tileSprite(
             0,
@@ -135,10 +152,6 @@ var fb_state_game = {
             game.cache.getImage('ground').height,
             'ground'
         );
-
-        // Crates
-        this.crates = game.add.group();
-        this.crates.enableBody = true;
 
         // Bird
         this.bird_sprite = this.randBird();
@@ -151,17 +164,20 @@ var fb_state_game = {
         this.bird.animations.add('fly_start', [0, 6, 7], 10, false);
         this.bird.animations.add('fly_game', [0, 6, 7], 15, false);
 
+        this.jump_snd = game.add.sound('jump_snd');
+        this.score_snd = game.add.sound('score_snd');
+
         // Enable physics on objects
-        game.physics.arcade.enable([this.ground, this.bird]);
+        game.physics.arcade.enable([this.crates, this.score_tiles, this.ground, this.bird]);
 
         // Config objects
         this.ground.body.setSize(this.ground.width, this.ground.height);
         this.ground.body.immovable = true;
 
         this.bird.anchor.setTo(0.0, 0.5);
-        this.bird.scale.setTo(2, 2);
+        this.bird.scale.setTo(bird_scale, bird_scale);
         this.bird.body.collideWorldBounds = true;
-        this.bird.body.syncBounds = true;
+        // this.bird.body.syncBounds = true;
 
         // Config tweens
         this.tween_fly_up = game.add.tween(this.bird);
@@ -176,36 +192,75 @@ var fb_state_game = {
 
         game.input.onTap.add(this.jump, this);
 
+        // game.time.slowMotion = 4.0;
+
+        this.score_lbl = game.add.text(
+            game.world.width / 2,
+            game.world.height / 5,
+            '0', {
+                font: 'Hack',
+                fontSize: '40pt',
+                fill: '#5050f0',
+                align: 'center',
+                boundsAlignH: 'center'
+            }
+        );
+
         console.log("[DEBUG] Game loaded.");
     },
     update: function() {
-        if (this.bird.alive) {
-            this.bg.tilePosition.x -= 1;
-            this.ground.tilePosition.x -= 1;
+        if (this.game_running) {
+            if (this.bird.alive) {
+                this.bg.tilePosition.x -= 1;
+                this.ground.tilePosition.x -= 1;
 
-            if (!this.game_running) {
-                this.bird.animations.play('fly_start');
-            } else {
                 this.bird.animations.play('fly_game');
-            }
 
+                // Collision checking
+                game.physics.arcade.collide(this.bird, this.crates, this.crateCollision, null, this);
+                if (!this.score_update) {
+                    this.score_update = game.physics.arcade.overlap(this.bird, this.score_tiles, this.scoreUpdate, null, this);
+                }
+            }
             game.physics.arcade.collide(this.bird, this.ground, this.groundCollision, null, this);
+        } else {
+            if (this.bird.alive) {
+                this.bird.animations.play('fly_start');
+            }
         }
 
-        if (this.game_running && this.bird.body.velocity.y > 100 && !this.tween_fly_up.isRunning) {
-            if (this.bird.angle < 30) {
-                this.bird.angle += 5;
-            } else if (this.bird.angle < 90) {
-                this.bird.angle += 2;
+        if (this.game_running && !this.tween_fly_up.isRunning) {
+            if (this.bird.body.velocity.y >= 0 && this.bird.angle < 0) {
+                this.bird.angle++;
+            }
+            if (this.bird.body.velocity.y > 200) {
+                if (this.bird.angle < 30) {
+                    this.bird.angle += 6;
+                } else if (this.bird.angle < 80) {
+                    this.bird.angle += 2;
+                }
             }
         }
     },
     render: function() {
         // game.debug.body(this.bird, "rgba(255, 0, 0, .25)");
         // game.debug.body(this.ground, "rgba(0, 255, 255, .25)");
+        // game.debug.bodyInfo(this.bird, 30, 30, "#ff0000");
+        // game.debug.body(this.crates, "rgba(255, 255, 128, 0.5)");
+        // game.debug.body(this.score_tiles, "rgba(255, 0, 0, 0.5)");
     },
     rand: function(min, max) {
         return Math.floor(Math.random() * (max - min + 1)) + 1;
+    },
+    startGame: function() {
+        this.game_running = true;
+        this.bird.body.gravity.y = gravity;
+        this.addColOfCrates();
+        this.timer_crate_gen = game.time.events.loop(
+            crate_gen_delay * game.time.slowMotion,
+            this.addColOfCrates,
+            this
+        );
     },
     randBird: function() {
         var rand = this.rand(0, 10);
@@ -250,20 +305,76 @@ var fb_state_game = {
         }
         return this.bird_sprite;
     },
+    addCrate: function(x, y) {
+        var crate = game.add.sprite(x, y, 'crate');
+        this.crates.add(crate);
+        crate.scale.setTo(crate_scale, crate_scale);
+        crate.body.syncBounds = true;
+        crate.body.immovable = true;
+        crate.body.checkWorldBounds = true;
+        crate.body.outOfBoundsKill = true;
+        crate.body.velocity.x = world_speed;
+    },
+    addScoreTile: function(x, y) {
+        var crate = game.add.sprite(x + this.crate_size / 2, y, 'score_tile');
+        this.score_tiles.add(crate);
+        crate.scale.setTo(crate_scale, crate_scale);
+        crate.body.syncBounds = true;
+        crate.body.immovable = true;
+        crate.body.checkWorldBounds = true;
+        crate.body.outOfBoundsKill = true;
+        crate.body.velocity.x = world_speed;
+    },
+    addColOfCrates: function() {
+        var limit = Math.floor(game.world.height / (this.crate_size * crate_scale));
+        var hole = this.rand(2, limit - Math.floor((this.ground.height / (this.crate_size * crate_scale))) - 3);
+        for (var i = 0; i < limit; i++) {
+            if (i === hole) {
+                this.addScoreTile(
+                    game.world.width,
+                    i * this.crate_size * crate_scale
+                );
+                continue;
+            }
+            if (i === hole + 1) continue;
+            this.addCrate(
+                game.world.width,
+                i * this.crate_size * crate_scale
+            );
+        }
+        this.score_update = false;
+    },
     jump: function() {
         if (this.bird.alive) {
             if (!this.game_running) {
-                this.game_running = true;
-                this.bird.body.gravity.y = gravity;
+                this.startGame();
             };
             this.tween_fly_up.start();
             this.bird.body.velocity.y = jump_velocity;
+            this.jump_snd.play();
         }
+    },
+    scoreUpdate: function() {
+        this.score++;
+        this.score_lbl.text = this.score;
+        this.score_snd.play();
+    },
+    crateCollision: function() {
+        this.bird.alive = false;
+        this.bird.body.velocity.x = 0;
+        this.crates.forEach(function(p) {
+            p.body.velocity.x = 0;
+        }, this);
+        game.time.events.remove(this.timer_crate_gen);
     },
     groundCollision: function() {
         this.bird.alive = false;
         this.game_running = false;
         this.bird.body.gravity.y = 0;
+        this.crates.forEach(function(p) {
+            p.body.velocity.x = 0;
+        }, this);
+        game.time.events.remove(this.timer_crate_gen);
     }
 };
 
