@@ -2,9 +2,10 @@ CACHE MANIFEST
 assets/bg.png
 assets/btn_play.png
 assets/crate_hit_1.wav
+assets/crate_hit_2.wav
 assets/Crate.png
+assets/frame.png
 assets/ground.png
-assets/jump.wav
 assets/Player_Black.png
 assets/Player_Blue.png
 assets/Player_Dead.png
@@ -18,6 +19,7 @@ assets/Player_Sick.png
 assets/Player_White.png
 assets/score_tile.png
 assets/score_up.wav
+assets/swing.wav
 js/fb.js
 js/phaser.min.js
 
