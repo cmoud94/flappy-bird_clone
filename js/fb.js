@@ -95,6 +95,15 @@ var fb_state_menu = {
         );
 
         game.add.button(
+            10,
+            10,
+            'btn_play',
+            this.toggleFullScreen,
+            this,
+            0, 0, 1, 0
+        );
+
+        game.add.button(
             game.world.centerX - (game.cache.getImage('btn_play').width / 4),
             game.world.centerY - (game.cache.getImage('btn_play').height / 2),
             'btn_play',
@@ -199,15 +208,19 @@ var fb_state_game = {
         // game.time.slowMotion = 4.0;
 
         this.score_lbl = game.add.text(
-            game.world.width / 2,
-            game.world.height / 5,
+            0,
+            0,
             '0', {
-                font: 'Hack',
+                // font: 'Hack',
                 fontSize: '40pt',
                 fill: '#5050f0',
                 // align: 'center',
                 boundsAlignH: 'center'
             }
+        );
+        this.score_lbl.reset(
+            game.world.width / 2 - this.score_lbl.width / 2,
+            game.world.height / 5 - this.score_lbl.height / 2
         );
 
         console.log("[DEBUG] Game loaded.");
@@ -265,6 +278,9 @@ var fb_state_game = {
             this.addColOfCrates,
             this
         );
+    },
+    restartGame: function() {
+        game.state.restart();
     },
     randBird: function() {
         var rand = this.rand(0, 10);
@@ -368,6 +384,10 @@ var fb_state_game = {
         this.score++;
         this.score_lbl.text = this.score;
         this.score_snd.play();
+        this.score_lbl.reset(
+            game.world.width / 2 - this.score_lbl.width / 2,
+            game.world.height / 5 - this.score_lbl.height / 2
+        );
     },
     crateCollision: function() {
         this.hit_snd.play();
@@ -387,6 +407,15 @@ var fb_state_game = {
             p.body.velocity.x = 0;
         }, this);
         game.time.events.remove(this.timer_crate_gen);
+
+        game.add.button(
+            game.world.centerX - (game.cache.getImage('btn_play').width / 4),
+            game.world.centerY - (game.cache.getImage('btn_play').height / 2),
+            'btn_play',
+            this.restartGame,
+            this,
+            0, 0, 1, 0
+        );
     }
 };
 
