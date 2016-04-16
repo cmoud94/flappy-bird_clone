@@ -16,10 +16,10 @@ var game = new Phaser.Game(
 /**
  * Global variables
  */
-var gravity = 500;
+var gravity = 600;
 var jump_velocity = -150;
 var world_speed = -60;
-var crate_gen_delay = 2000;
+var crate_gen_delay = 2500;
 var bird_scale = 1.5;
 var crate_scale = 0.5;
 
@@ -56,6 +56,8 @@ var fb_state_init = {
         game.load.audio('jump_snd', 'assets/jump.wav');
         // Score sound
         game.load.audio('score_snd', 'assets/score_up.wav');
+        // Hit sound
+        game.load.audio('hit_snd', 'assets/crate_hit_1.wav');
     },
     create: function() {
         var bg_w = game.cache.getImage('bg').width;
@@ -164,8 +166,10 @@ var fb_state_game = {
         this.bird.animations.add('fly_start', [0, 6, 7], 10, false);
         this.bird.animations.add('fly_game', [0, 6, 7], 15, false);
 
+        // Sound init
         this.jump_snd = game.add.sound('jump_snd');
         this.score_snd = game.add.sound('score_snd');
+        this.hit_snd = game.add.sound('hit_snd');
 
         // Enable physics on objects
         game.physics.arcade.enable([this.crates, this.score_tiles, this.ground, this.bird]);
@@ -201,7 +205,7 @@ var fb_state_game = {
                 font: 'Hack',
                 fontSize: '40pt',
                 fill: '#5050f0',
-                align: 'center',
+                // align: 'center',
                 boundsAlignH: 'center'
             }
         );
@@ -327,7 +331,12 @@ var fb_state_game = {
     },
     addColOfCrates: function() {
         var limit = Math.floor(game.world.height / (this.crate_size * crate_scale));
-        var hole = this.rand(2, limit - Math.floor((this.ground.height / (this.crate_size * crate_scale))) - 3);
+        var hole = this.rand(2, limit - Math.floor((this.ground.height / (this.crate_size * crate_scale))) * 2);
+        console.log("Hole: " + hole);
+        console.log("Last Hole: " + this.last_hole);
+        if (Math.abs(this.last_hole - hole) > 4) {
+            hole = (this.last_hole > hole) ? this.last_hole - hole : hole - this.last_hole;
+        }
         for (var i = 0; i < limit; i++) {
             if (i === hole) {
                 this.addScoreTile(
@@ -343,6 +352,7 @@ var fb_state_game = {
             );
         }
         this.score_update = false;
+        this.last_hole = hole;
     },
     jump: function() {
         if (this.bird.alive) {
@@ -360,6 +370,7 @@ var fb_state_game = {
         this.score_snd.play();
     },
     crateCollision: function() {
+        this.hit_snd.play();
         this.bird.alive = false;
         this.bird.body.velocity.x = 0;
         this.crates.forEach(function(p) {
@@ -368,6 +379,7 @@ var fb_state_game = {
         game.time.events.remove(this.timer_crate_gen);
     },
     groundCollision: function() {
+        this.hit_snd.play();
         this.bird.alive = false;
         this.game_running = false;
         this.bird.body.gravity.y = 0;
