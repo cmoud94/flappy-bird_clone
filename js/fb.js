@@ -1,7 +1,3 @@
-//$(document).on("load", function() {
-// var w = window.innerWidth;
-// var h = window.innerHeight;
-
 // Phaser init
 var game = new Phaser.Game(
     '100',
@@ -95,15 +91,6 @@ var fb_state_menu = {
         );
 
         game.add.button(
-            10,
-            10,
-            'btn_play',
-            this.toggleFullScreen,
-            this,
-            0, 0, 1, 0
-        );
-
-        game.add.button(
             game.world.centerX - (game.cache.getImage('btn_play').width / 4),
             game.world.centerY - (game.cache.getImage('btn_play').height / 2),
             'btn_play',
@@ -116,15 +103,6 @@ var fb_state_menu = {
     },
     startGame: function() {
         game.state.start('game');
-    },
-    toggleFullScreen: function() {
-        if (game.scale.isFullScreen) {
-            game.scale.stopFullScreen();
-            game.scale.refresh();
-        } else {
-            game.scale.startFullScreen(false);
-            game.scale.refresh();
-        }
     }
 };
 
@@ -425,9 +403,3 @@ var fb_state_game = {
 game.state.add('init', fb_state_init, true);
 game.state.add('menu', fb_state_menu, false);
 game.state.add('game', fb_state_game, false);
-
-// function rand(min, max) {
-//     return Math.floor(Math.random() * (max - min + 1)) + 1;
-// }
-
-//});

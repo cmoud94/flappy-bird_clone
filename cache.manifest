@@ -1,0 +1,25 @@
+CACHE MANIFEST
+assets/bg.png
+assets/btn_play.png
+assets/crate_hit_1.wav
+assets/Crate.png
+assets/ground.png
+assets/jump.wav
+assets/Player_Black.png
+assets/Player_Blue.png
+assets/Player_Dead.png
+assets/Player_Flame_inGame.png
+assets/Player_Flame_noGlow.png
+assets/Player_Genclops.png
+assets/Player_Green.png
+assets/Player_Rainbow.png
+assets/Player_Red.png
+assets/Player_Sick.png
+assets/Player_White.png
+assets/score_tile.png
+assets/score_up.wav
+js/fb.js
+js/phaser.min.js
+
+NETWORK:
+*
