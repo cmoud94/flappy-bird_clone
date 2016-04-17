@@ -75,6 +75,8 @@ var fb_state_init = {
         );
         if (game.device.desktop) {
             game.scale.setGameSize(bg_w, bg_h);
+        } else {
+            game.scale.forceOrientation(false, true);
         }
         game.scale.refresh();
 
@@ -121,46 +123,44 @@ var fb_state_menu = {
     },
     randBird: function() {
         var rand = this.rand(0, 10);
-        this.bird_sprite;
         switch (rand) {
             case 0:
-                this.bird_sprite = 'bird_black';
+                return 'bird_black';
                 break;
             case 1:
-                this.bird_sprite = 'bird_blue';
+                return 'bird_blue';
                 break;
             case 2:
-                this.bird_sprite = 'bird_dead';
+                return 'bird_dead';
                 break;
             case 3:
-                this.bird_sprite = 'bird_flame';
+                return 'bird_flame';
                 break;
             case 4:
-                this.bird_sprite = 'bird_flame_noGlow';
+                return 'bird_flame_noGlow';
                 break;
             case 5:
-                this.bird_sprite = 'bird_genclops';
+                return 'bird_genclops';
                 break;
             case 6:
-                this.bird_sprite = 'bird_green';
+                return 'bird_green';
                 break;
             case 7:
-                this.bird_sprite = 'bird_rainbow';
+                return 'bird_rainbow';
                 break;
             case 8:
-                this.bird_sprite = 'bird_red';
+                return 'bird_red';
                 break;
             case 9:
-                this.bird_sprite = 'bird_sick';
+                return 'bird_sick';
                 break;
             case 10:
-                this.bird_sprite = 'bird_white';
+                return 'bird_white';
                 break;
             default:
-                this.bird_sprite = 'bird_blue';
+                return 'bird_blue';
                 break;
         }
-        return this.bird_sprite;
     },
     startGame: function() {
         game.state.start('game');
@@ -204,7 +204,7 @@ var fb_state_game = {
         );
 
         // Bird
-        // this.bird_sprite = this.randBird();
+        bird_sprite = this.randBird();
         this.bird = game.add.sprite(
             (game.world.width / 3) - ((game.cache.getImage(bird_sprite).width / 3) / 2),
             (game.world.height / 2) - (game.cache.getImage(bird_sprite).height / 2),
@@ -221,7 +221,7 @@ var fb_state_game = {
         this.hit_snd_2 = game.add.sound('hit_snd_2');
 
         // Enable physics on objects
-        game.physics.arcade.enable([this.crates, this.score_tiles, this.ground, this.bird]);
+        game.physics.arcade.enable([this.ground, this.bird]);
 
         // Config objects
         this.ground.body.setSize(this.ground.width, this.ground.height);
@@ -251,10 +251,8 @@ var fb_state_game = {
             0,
             0,
             '0', {
-                // font: 'Hack',
                 fontSize: '30pt',
                 fill: '#ffffff',
-                // align: 'center',
                 boundsAlignH: 'center',
                 stroke: '#303030',
                 strokeThickness: 4
@@ -277,8 +275,11 @@ var fb_state_game = {
 
                 // Collision checking
                 game.physics.arcade.collide(this.bird, this.crates, this.crateCollision, null, this);
-                if (!this.score_update) {
-                    this.score_update = game.physics.arcade.overlap(this.bird, this.score_tiles, this.scoreUpdate, null, this);
+                if (this.score_update != game.physics.arcade.overlap(this.bird, this.score_tiles, null, null, this)) {
+                    this.score_update = !this.score_update;
+                    if (this.score_update) {
+                        this.scoreUpdate();
+                    }
                 }
             }
             game.physics.arcade.collide(this.bird, this.ground, this.groundCollision, null, this);
@@ -304,14 +305,55 @@ var fb_state_game = {
         }
     },
     render: function() {
+        // game.debug.bodyInfo(this.bird, 30, 30, "#ff0000");
         // game.debug.body(this.bird, "rgba(255, 0, 0, .5)");
         // game.debug.body(this.ground, "rgba(0, 255, 255, .25)");
-        // game.debug.bodyInfo(this.bird, 30, 30, "#ff0000");
         // game.debug.body(this.crates, "rgba(255, 255, 128, 0.5)");
         // game.debug.body(this.score_tiles, "rgba(255, 0, 0, 0.5)");
     },
     rand: function(min, max) {
         return Math.floor(Math.random() * (max - min + 1)) + 1;
+    },
+    randBird: function() {
+        var rand = this.rand(0, 10);
+        switch (rand) {
+            case 0:
+                return 'bird_black';
+                break;
+            case 1:
+                return 'bird_blue';
+                break;
+            case 2:
+                return 'bird_dead';
+                break;
+            case 3:
+                return 'bird_flame';
+                break;
+            case 4:
+                return 'bird_flame_noGlow';
+                break;
+            case 5:
+                return 'bird_genclops';
+                break;
+            case 6:
+                return 'bird_green';
+                break;
+            case 7:
+                return 'bird_rainbow';
+                break;
+            case 8:
+                return 'bird_red';
+                break;
+            case 9:
+                return 'bird_sick';
+                break;
+            case 10:
+                return 'bird_white';
+                break;
+            default:
+                return 'bird_blue';
+                break;
+        }
     },
     startGame: function() {
         this.game_running = true;
@@ -330,20 +372,20 @@ var fb_state_game = {
         var crate = game.add.sprite(x, y, 'crate');
         this.crates.add(crate);
         crate.scale.setTo(crate_scale, crate_scale);
-        crate.body.syncBounds = true;
+        // crate.body.syncBounds = true;
         crate.body.immovable = true;
-        crate.body.checkWorldBounds = true;
-        crate.body.outOfBoundsKill = true;
+        // crate.body.checkWorldBounds = true;
+        // crate.body.outOfBoundsKill = true;
         crate.body.velocity.x = world_speed;
     },
     addScoreTile: function(x, y) {
         var crate = game.add.sprite(x + this.crate_size / 2, y, 'score_tile');
         this.score_tiles.add(crate);
         crate.scale.setTo(crate_scale, crate_scale);
-        crate.body.syncBounds = true;
+        // crate.body.syncBounds = true;
         crate.body.immovable = true;
-        crate.body.checkWorldBounds = true;
-        crate.body.outOfBoundsKill = true;
+        // crate.body.checkWorldBounds = true;
+        // crate.body.outOfBoundsKill = true;
         crate.body.velocity.x = world_speed;
     },
     addColOfCrates: function() {
@@ -366,8 +408,18 @@ var fb_state_game = {
                 i * this.crate_size * crate_scale
             );
         }
-        this.score_update = false;
         this.last_hole = hole;
+        // Delete crates and score tiles that are out of left world bound
+        this.crates.forEach(function(p) {
+            if (p.x + p.width < 0) {
+                p.kill();
+            }
+        }, this);
+        this.score_tiles.forEach(function(p) {
+            if (p.x + p.width < 0) {
+                p.kill();
+            }
+        }, this);
     },
     jump: function() {
         if (this.bird.alive) {
@@ -401,6 +453,7 @@ var fb_state_game = {
         this.hit_snd_1.play();
         this.bird.alive = false;
         this.game_running = false;
+        this.bird.body.velocity.x = 0;
         this.bird.body.gravity.y = 0;
         this.crates.forEach(function(p) {
             p.body.velocity.x = 0;
