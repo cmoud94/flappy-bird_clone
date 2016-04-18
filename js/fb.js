@@ -211,8 +211,9 @@ var fb_state_game = {
             bird_sprite,
             0
         );
-        this.bird.animations.add('fly_start', [0, 6, 7], 10, false);
-        this.bird.animations.add('fly_game', [0, 6, 7], 15, false);
+        this.bird.animations.add('fly', [0, 6, 7]);
+
+        this.bird.animations.play('fly', 10, true);
 
         // Sound init
         this.jump_snd = game.add.sound('jump_snd');
@@ -268,11 +269,6 @@ var fb_state_game = {
     update: function() {
         if (this.game_running) {
             if (this.bird.alive) {
-                this.bg.tilePosition.x -= 1;
-                this.ground.tilePosition.x -= 1;
-
-                this.bird.animations.play('fly_game');
-
                 // Collision checking
                 game.physics.arcade.collide(this.bird, this.crates, this.crateCollision, null, this);
                 if (this.score_update != game.physics.arcade.overlap(this.bird, this.score_tiles, null, null, this)) {
@@ -283,12 +279,11 @@ var fb_state_game = {
                 }
             }
             game.physics.arcade.collide(this.bird, this.ground, this.groundCollision, null, this);
-        } else {
-            if (this.bird.alive) {
-                this.bird.animations.play('fly_start');
-                this.bg.tilePosition.x -= 1;
-                this.ground.tilePosition.x -= 1;
-            }
+        }
+
+        if (this.bird.alive) {
+            this.bg.tilePosition.x -= 1;
+            this.ground.tilePosition.x -= 1;
         }
 
         if (this.game_running && !this.tween_fly_up.isRunning) {
@@ -357,6 +352,8 @@ var fb_state_game = {
     },
     startGame: function() {
         this.game_running = true;
+        this.bird.animations.stop('fly');
+        this.bird.animations.play('fly', 15, true);
         this.bird.body.gravity.y = gravity;
         this.addColOfCrates();
         this.timer_crate_gen = game.time.events.loop(
