@@ -448,6 +448,7 @@ var fb_state_game = {
     },
     groundCollision: function() {
         this.hit_snd_1.play();
+        this.bird.animations.stop('fly');
         this.bird.alive = false;
         this.game_running = false;
         this.bird.body.velocity.x = 0;
